@@ -1,0 +1,328 @@
+### Lab assignment - SIMP56 ###
+
+#Packages
+
+library(igraph)
+library(network)
+library(sna)
+library(intergraph)
+library(vcd)
+library(RColorBrewer)
+library(ggraph)
+library(visNetwork)
+library(dplyr)
+library(tidyverse)
+library(devtools)
+
+
+### Questions 1-8 ###
+
+#Data
+klubbdata_e = read.csv("C:\\Users\\noora\\Documents\\uni_R\\klubbdata_edges.csv")
+klubbdata_n = read.csv("C:\\Users\\noora\\Documents\\uni_R\\klubbdata_nodes.csv")
+
+## Q1 - Is the network directed or undirected? 
+
+# Creating an igraph object with attributes from the data frames
+klubb_net_test <- graph_from_data_frame(d = klubbdata_e, vertices = klubbdata_n, directed = TRUE)
+plot(klubb_net_test)
+
+# Undirected version of the network
+klubb_net <- graph_from_data_frame(d = klubbdata_e, vertices = klubbdata_n, directed = FALSE)
+
+## Q2 - How many actors and ties there are? 
+
+#Number of edges (ties)
+gsize(klubb_net)
+
+#Number of vertices (actors)
+gorder(klubb_net)
+
+## Q3 - What is the density of the network? 
+
+#From the number of nodes and arcs
+78/(34*(34-1))
+
+## Q4 - What is the average degree of the network? 
+
+degree.distribution(klubb_net)
+
+degree(klubb_net)
+degree(klubb_net, cmode="freeman")
+
+degree(klubb_net)/2
+
+degree_df <- data.frame(degree(klubb_net)/2)
+
+summary(degree_df)
+
+## Q5 - What is the average shortest path of the network? 
+
+mean_distance(klubb_net, directed = F)
+
+## Q6 - Who are the 2 most central characters in this network? 
+
+sort(degree(klubb_net))
+
+## Q7 - Are there different communities in the network (use the Louvain algorithm)? 
+
+# Running the Louvain community detection algorithm
+community_k <- cluster_louvain(klubb_net, weights=NULL)
+class(community_k)
+
+community_k$membership
+
+#Plot the community network
+m1 <- plot(klubb_net, vertex.color = "white", vertex.label.color = "black", mark.groups = community_k, edge.color = "blue")
+
+## Q8 - Perform clustering based on edge betweenness (use cut-off to 2 clusters). 
+## How well do the clustering results match with the actual club membership?
+
+#Community (cluster) detection based on edge betweenness (Newman-Girvan algorithm)
+comm_clus <- cluster_edge_betweenness(klubb_net, directed = F)
+comm_clus
+
+# Listing node membership in identified clusters
+membership(comm_clus)
+
+# Dividing nodes into 2 clusters based on the above clustering results
+klubb_2clusters <- cut_at(comm_clus, no = 2)
+klubb_2clusters
+
+#Tabulating clusters and club membership
+
+club_mem <- klubbdata_n$faction
+
+table(klubb_2clusters, club_mem)
+
+# Calculating correlation between the clusters and club membership
+chisq.test(klubb_2clusters, club_mem)
+
+# Plotting the results
+
+# Creating a dendrogram showing 2 communities
+dendPlot(comm_clus, mode="hclust", rect = 2)
+
+#Which club and cluster
+club_mem
+
+klubb_2clusters
+
+### Questions 9 - 17 ###
+
+## Data
+
+devtools::install_github("pj398/movienetdata") 
+library(movienetdata) 
+data("starwars_tfa", "movienetdata") 
+data(package = "movienetdata") 
+force(starwars_tfa) 
+
+starwars_tfa 
+
+# Creating network object from adjacency matrix 
+starwars_net <- network(starwars_tfa$adjacency)
+
+## Q9 - Is the network directed or undirected? 
+
+starwars_net
+plot(starwars_net)
+
+## Q10 - How many actors and ties there are? 
+
+#Read statistics
+starwars_net
+
+## Q11 - What is the density of the network? 
+
+#From the number of nodes and arcs
+149/(31*(31-1))
+
+## Q12 - What is the average degree of the network? 
+
+sw_net <- as.matrix(starwars_net)
+sw_g <- graph.adjacency(sw_net, mode="directed")
+
+degree(sw_g)
+
+degree_df2 <- data.frame(degree(sw_g))
+
+summary(degree_df2)
+
+## Q13 - What is the average shortest path of the network? 
+
+mean_distance(sw_g, directed = T)
+
+## Q14 - Who are the 3 most important characters in this movie? 
+
+#Measuring the degree and sorting the results
+sort(degree(sw_g))
+
+## Q15 - Who does Rey interact within the movie? 
+
+neighbors(sw_g, "Rey")
+
+
+### Questions 18 - 21 ###
+
+## Q18 - Create a social network (e.g. friends, relatives, classmates etc.) with at least 16 actors. 
+## Compare your network to a random network and a small-world network of the same size
+
+# Creating an empty graph
+g <- graph.empty(directed = FALSE)
+
+# Adding vertices 
+g <- g + vertex("LH")
+g <- g + vertex("GR")
+g <- g + vertex("CL")
+g <- g + vertex("CS")
+g <- g + vertex("MV")
+g <- g + vertex("SP")
+g <- g + vertex("LN")
+g <- g + vertex("DR")
+g <- g + vertex("PG")
+g <- g + vertex("YT")
+g <- g + vertex("EO")
+g <- g + vertex("FA")
+g <- g + vertex("AA")
+g <- g + vertex("NL")
+g <- g + vertex("VB")
+g <- g + vertex("GZ")
+g <- g + vertex("KM")
+g <- g + vertex("MS")
+g <- g + vertex("SV")
+g <- g + vertex("LS")
+
+#Adding edges
+
+g <- g + edge("LH","GR")
+g <- g + edge("LH","DR")
+g <- g + edge("LH","LN")
+g <- g + edge("LH","PG")
+g <- g + edge("LH","VB")
+g <- g + edge("LH","SV")
+
+g <- g + edge("GR","DR")
+g <- g + edge("GR","AA")
+g <- g + edge("GR","LN")
+g <- g + edge("GR","NL")
+
+g <- g + edge("MV","SP")
+g <- g + edge("MV","CS")
+g <- g + edge("MV","AA")
+g <- g + edge("MV","DR")
+g <- g + edge("MV","LN")
+g <- g + edge("MV","FA")
+
+g <- g + edge("SP","CS")
+g <- g + edge("SP","FA")
+g <- g + edge("SP","DR")
+
+g <- g + edge("DR","LN")
+g <- g + edge("DR","SV")
+
+g <- g + edge("LN","CS")
+g <- g + edge("LN","CL")
+g <- g + edge("LN","AA")
+
+g <- g + edge("CL","CS")
+g <- g + edge("CL","PG")
+
+g <- g + edge("CS","FA")
+
+g <- g + edge("PG","YT")
+
+g <- g + edge("YT","AA")
+g <- g + edge("YT","GZ")
+
+g <- g + edge("FA","SV")
+g <- g + edge("FA","EO")
+
+g <- g + edge("EO","LS")
+g <- g + edge("EO","MS")
+
+g <- g + edge("VB","GZ")
+g <- g + edge("VB","SV")
+g <- g + edge("VB","MS")
+
+g <- g + edge("GZ","MS")
+g <- g + edge("GZ","AA")
+
+g <- g + edge("KM","MS")
+g <- g + edge("KM","SB")
+g <- g + edge("KM","DR")
+g <- g + edge("KM","VB")
+
+g <- g + edge("MS","SV")
+g <- g + edge("MS","LS")
+
+g <- g + edge("SV","LS")
+
+g <- g + edge("AA","NL")
+
+#Obtaining the list of vertices
+V(g)
+
+#Obtaining the list of edges
+E(g)
+
+#Plot the graph
+seed(22)
+plot(g, vertex.size=25, vertex.color = "skyblue", vertex.label.color = "black")
+
+g
+
+#density of the network
+#From the number of nodes and arcs
+46/(20*(20-1))
+
+#degree distribution
+hist(degree(g)/2, breaks=5)
+
+#Creating a random network
+g2 <- erdos.renyi.game(20, 50, type = "gnm")
+
+plot(g2, vertex.color = "orchid2")
+
+g2
+
+#density of the network
+#From the number of nodes and arcs
+50/(20*(20-1))
+
+#degree distribution
+hist(degree(g2)/2, breaks=5)
+
+#Creating a small world network
+g3 <- watts.strogatz.game(1, 20, 5, 0.05)
+
+plot(g3)
+
+g3
+
+#density of the network
+#From the number of nodes and arcs
+100/(20*(20-1))
+
+#degree distribution
+hist(degree(g3)/2, breaks=5)
+
+#Closeness centrality
+closeness(g)
+
+#Degree centrality
+degree(g)
+
+#Betweenness centrality
+betweenness(g)
+
+#Visualization of the F1 network
+
+plot(g,
+     vertex.color = "skyblue", 
+     vertex.label.color = "black", 
+     vertex.label.cex = .75, 
+     edge.curved=.20, 
+     layout=layout_with_fr,
+     edge.color="grey20",
+     label = "F1 Network") 
